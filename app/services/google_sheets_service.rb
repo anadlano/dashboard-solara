@@ -90,14 +90,23 @@ class GoogleSheetsService
   private
 
   def authorize
-    credentials_path = Rails.root.join('config', 'google_credentials', 'service_account.json')
+    # Usar variable de ambiente en producción, archivo local en desarrollo
+    credentials = if ENV['GOOGLE_CREDENTIALS_JSON'].present?
+      # Producción: cargar desde variable de ambiente
+      StringIO.new(ENV['GOOGLE_CREDENTIALS_JSON'])
+    else
+      # Desarrollo: cargar desde archivo local
+      credentials_path = Rails.root.join('config', 'google_credentials', 'service_account.json')
 
-    unless File.exist?(credentials_path)
-      raise "No se encontró el archivo de credenciales en: #{credentials_path}"
+      unless File.exist?(credentials_path)
+        raise "Error: No se encontró el archivo de credenciales en: #{credentials_path}"
+      end
+
+      File.open(credentials_path)
     end
 
     Google::Auth::ServiceAccountCredentials.make_creds(
-      json_key_io: File.open(credentials_path),
+      json_key_io: credentials,
       scope: Google::Apis::SheetsV4::AUTH_SPREADSHEETS_READONLY
     )
   end
