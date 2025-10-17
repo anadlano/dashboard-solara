@@ -263,17 +263,16 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 <script>
-let cfeChartInstance = null;
-let generacionChartInstance = null;
+window.cfeChartInstance = window.cfeChartInstance || null;
+window.generacionChartInstance = window.generacionChartInstance || null;
 
 function initializeCharts(chartData) {
   // Destruir gráficas anteriores si existen
-
-  if (cfeChartInstance) {
-    cfeChartInstance.destroy();
+  if (window.cfeChartInstance) {
+    window.cfeChartInstance.destroy();
   }
-  if (generacionChartInstance) {
-    generacionChartInstance.destroy();
+  if (window.generacionChartInstance) {
+    window.generacionChartInstance.destroy();
   }
 
   // Verificar si hay datos
@@ -287,7 +286,7 @@ function initializeCharts(chartData) {
   // ========================================
   const ctxCFE = document.getElementById('cfeChart');
   if (ctxCFE) {
-    cfeChartInstance = new Chart(ctxCFE, {
+    window.cfeChartInstance = new Chart(ctxCFE, {
       type: 'bar',
       data: {
         labels: chartData.cfe_chart.labels,
@@ -420,7 +419,7 @@ function initializeCharts(chartData) {
   // ========================================
   const ctxGen = document.getElementById('generacionChart');
   if (ctxGen) {
-    generacionChartInstance = new Chart(ctxGen, {
+    window.generacionChartInstance = new Chart(ctxGen, {
       type: 'bar',
       data: {
         labels: chartData.generacion_chart.labels,
