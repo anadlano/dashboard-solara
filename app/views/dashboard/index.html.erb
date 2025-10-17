@@ -1,0 +1,580 @@
+<div class="container-fluid mt-4">
+
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h1 class="display-4">
+        <i class="fas fa-solar-panel text-warning"></i>
+        Dashboard Solar - Conglomerado
+      </h1>
+      <p class="lead text-muted">Sistema de Monitoreo y Análisis</p>
+    </div>
+    <div class="col-md-4 text-end">
+      <%= link_to sync_data_dashboard_index_path, method: :get, class: 'btn btn-success btn-lg' do %>
+        <i class="fas fa-sync-alt"></i> Sincronizar Google Sheets
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Flash Messages -->
+  <% if flash[:notice] %>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      <%= flash[:notice] %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% end %>
+
+  <% if flash[:alert] %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      <%= flash[:alert] %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% end %>
+
+  <!-- Filtros -->
+  <div class="card mb-4 shadow">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0"><i class="fas fa-filter"></i> Filtros</h5>
+    </div>
+    <div class="card-body">
+      <%= form_with url: root_path, method: :get, local: true, class: "row g-3", id: "filtrosForm" do |form| %>
+
+        <div class="col-md-2">
+          <%= form.label :sitio, "Sitio", class: "form-label" %>
+          <%= form.select :sitio,
+                         options_for_select([['Todos', '']] + @sitios.map { |s| [s, s] }, params[:sitio]),
+                         {},
+                         { class: "form-select" } %>
+        </div>
+
+        <div class="col-md-2">
+          <%= form.label :integrador, "Integrador", class: "form-label" %>
+          <%= form.select :integrador,
+                         options_for_select([['Todos', '']] + @integradores.map { |i| [i, i] }, params[:integrador]),
+                         {},
+                         { class: "form-select" } %>
+        </div>
+
+        <div class="col-md-2">
+          <%= form.label :rpu, "RPU", class: "form-label" %>
+          <%= form.select :rpu,
+                         options_for_select([['Todos', '']] + @rpus.map { |r| [r, r] }, params[:rpu]),
+                         {},
+                         { class: "form-select" } %>
+        </div>
+
+        <div class="col-md-2">
+          <%= form.label :mes, "Mes", class: "form-label" %>
+          <%= form.select :mes,
+                         options_for_select([['Todos', '']] + @meses.map { |m| [m, m] }, params[:mes]),
+                         {},
+                         { class: "form-select" } %>
+        </div>
+
+        <div class="col-md-2">
+          <%= form.label :periodo, "Periodo", class: "form-label" %>
+          <%= form.select :periodo,
+                         options_for_select([['Todos', '']] + @periodos.map { |p| [p, p] }, params[:periodo]),
+                         {},
+                         { class: "form-select" } %>
+        </div>
+
+       <div class="col-md-2 d-flex align-items-end">
+        <%= form.submit "Filtrar", class: "btn btn-primary w-100", id: "btnFiltrar" %>
+      </div>
+
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Métricas Resumen -->
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="card text-white bg-success shadow">
+        <div class="card-body">
+          <h6 class="card-title">💰 Ahorro Neto Total</h6>
+          <h2 class="card-text">
+            <%= number_to_currency(@summary_data[:total_ahorro_neto], unit: '$', precision: 0) %>
+          </h2>
+          <small>Después de mensualidad</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card text-white bg-warning shadow">
+        <div class="card-body">
+          <h6 class="card-title">⚡ Generación Total</h6>
+          <h2 class="card-text">
+            <%= number_with_delimiter(@summary_data[:total_generacion_real], precision: 0) %> kWh
+          </h2>
+          <small>Energía generada</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card text-white bg-info shadow">
+        <div class="card-body">
+          <h6 class="card-title">📊 Eficiencia Promedio</h6>
+          <h2 class="card-text">
+            <%= @summary_data[:promedio_eficiencia] %>%
+          </h2>
+          <small>vs Generación esperada</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card text-white bg-primary shadow">
+        <div class="card-body">
+          <h6 class="card-title">🏢 Sitios Activos</h6>
+          <h2 class="card-text">
+            <%= @summary_data[:sitios_activos] %>
+          </h2>
+          <small>Total de ubicaciones</small>
+        </div>
+      </div>
+    </div>
+  </div>
+<!-- Gráficas Dinámicas -->
+  <div class="row mb-4">
+    <!-- Gráfica 1: CFE Sin Solar vs Con Solar -->
+    <div class="col-12">
+      <div class="card shadow-lg">
+        <div class="card-header bg-gradient-primary text-white">
+          <h5 class="mb-0">
+            <i class="fas fa-chart-bar me-2"></i>
+            Comparación CFE: Sin Solar vs Con Solar
+          </h5>
+        </div>
+        <div class="card-body">
+          <div style="position: relative; height: 400px;">
+            <canvas id="cfeChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mb-4">
+    <!-- Gráfica 2: Generación Real vs Garantizada -->
+    <div class="col-12">
+      <div class="card shadow-lg">
+        <div class="card-header bg-gradient-success text-white">
+          <h5 class="mb-0">
+            <i class="fas fa-bolt me-2"></i>
+            Generación Real vs Garantizada
+          </h5>
+        </div>
+        <div class="card-body">
+          <div style="position: relative; height: 400px;">
+            <canvas id="generacionChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de Datos -->
+  <div class="card shadow">
+    <div class="card-header bg-dark text-white">
+      <h5 class="mb-0"><i class="fas fa-table"></i> Datos del Sistema</h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-striped table-hover table-sm">
+          <thead class="table-dark">
+            <tr>
+              <th>Sitio</th>
+              <th>Integrador</th>
+              <th>Mes</th>
+              <th>Periodo</th>
+              <th class="text-end">CFE sin Solar</th>
+              <th class="text-end">CFE con Solar</th>
+              <th class="text-end">Mensualidad</th>
+              <th class="text-end">Ahorro Neto</th>
+              <th class="text-end">Generación Real</th>
+              <th class="text-end">Generación garantizada</th>
+              <th class="text-center">Eficiencia</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if @filtered_data.any? %>
+              <% @filtered_data.limit(100).each do |record| %>
+                <tr>
+                  <td><strong><%= record.sitio %></strong></td>
+                  <td><%= record.integrador %></td>
+                  <td><%= record.mes %></td>
+                  <td><span class="badge bg-info"><%= record.periodo %></span></td>
+                  <td class="text-end">
+                    <%= number_to_currency(record.subtotal_cfe_sin_sistema, unit: '$', precision: 0) %>
+                  </td>
+                  <td class="text-end">
+                    <%= number_to_currency(record.subtotal_cfe_con_sistema, unit: '$', precision: 0) %>
+                  </td>
+                  <td class="text-end">
+                    <%= number_to_currency(record.mensualidad_solara, unit: '$', precision: 0) %>
+                  </td>
+                  <td class="text-end">
+                    <strong class="text-success">
+                      <%= number_to_currency(record.ahorro_neto, unit: '$', precision: 0) %>
+                    </strong>
+                  </td>
+                  <td class="text-end">
+                    <%= number_with_delimiter(record.generacion_real, precision: 0) %> kWh
+                  </td>
+                  <td class="text-end">
+                    <%= number_with_delimiter(record.generacion_garantizada, precision: 0) %> kWh
+                  </td>
+                  <td class="text-center">
+                    <% eficiencia = record.eficiencia_vs_garantizada %>
+                    <span class="badge bg-<%= eficiencia >= 100 ? 'success' : eficiencia >= 90 ? 'warning' : 'danger' %>">
+                      <%= eficiencia.round(1) %>%
+                    </span>
+                  </td>
+                </tr>
+              <% end %>
+            <% else %>
+              <tr>
+                <td colspan="11" class="text-center text-muted py-5">
+                  <i class="fas fa-inbox fa-3x mb-3 d-block"></i>
+                  <strong>No hay datos disponibles</strong>
+                  <br>
+                  <small>Presiona "Sincronizar Google Sheets" para cargar datos</small>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <% if @filtered_data.count > 100 %>
+        <div class="alert alert-info mt-3 mb-0">
+          <i class="fas fa-info-circle"></i>
+          Mostrando 100 de <%= @filtered_data.count %> registros.
+          Usa los filtros para refinar los resultados.
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<script>
+let cfeChartInstance = null;
+let generacionChartInstance = null;
+
+function initializeCharts(chartData) {
+  // Destruir gráficas anteriores si existen
+
+  if (cfeChartInstance) {
+    cfeChartInstance.destroy();
+  }
+  if (generacionChartInstance) {
+    generacionChartInstance.destroy();
+  }
+
+  // Verificar si hay datos
+  if (!chartData || !chartData.cfe_chart || !chartData.generacion_chart) {
+    console.error('No hay datos para las gráficas');
+    return;
+  }
+
+  // ========================================
+  // GRÁFICA 1: CFE Sin Solar vs Con Solar
+  // ========================================
+  const ctxCFE = document.getElementById('cfeChart');
+  if (ctxCFE) {
+    cfeChartInstance = new Chart(ctxCFE, {
+      type: 'bar',
+      data: {
+        labels: chartData.cfe_chart.labels,
+        datasets: [
+          {
+            type: 'bar',
+            label: 'CFE Sin Solar',
+            data: chartData.cfe_chart.cfe_sin_solar,
+            backgroundColor: 'rgba(239, 68, 68, 0.8)',
+            borderColor: 'rgb(239, 68, 68)',
+            borderWidth: 2,
+            borderRadius: 6,
+            order: 2
+          },
+          {
+            type: 'bar',
+            label: 'CFE Con Solar',
+            data: chartData.cfe_chart.cfe_con_solar,
+            backgroundColor: 'rgba(34, 197, 94, 0.8)',
+            borderColor: 'rgb(34, 197, 94)',
+            borderWidth: 2,
+            borderRadius: 6,
+            order: 3
+          },
+          {
+            type: 'line',
+            label: 'Ahorro Neto',
+            data: chartData.cfe_chart.ahorro_neto,
+            borderColor: 'rgb(59, 130, 246)',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            borderWidth: 3,
+            tension: 0.4,
+            fill: true,
+            pointRadius: 5,
+            pointBackgroundColor: 'rgb(59, 130, 246)',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointHoverRadius: 7,
+            yAxisID: 'y1',
+            order: 1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false
+        },
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: {
+              font: { size: 14, weight: 'bold' },
+              padding: 20,
+              usePointStyle: true
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            padding: 12,
+            titleFont: { size: 14, weight: 'bold' },
+            bodyFont: { size: 13 },
+            callbacks: {
+              label: function(context) {
+                let label = context.dataset.label || '';
+                if (label) label += ': ';
+                if (context.parsed.y !== null) {
+                  label += new Intl.NumberFormat('es-MX', {
+                    style: 'currency',
+                    currency: 'MXN'
+                  }).format(context.parsed.y);
+                }
+                return label;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              font: { size: 10 },
+              maxRotation: 45,
+              minRotation: 45
+            }
+          },
+          y: {
+            type: 'linear',
+            display: true,
+            position: 'left',
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'CFE (MXN)',
+              font: { size: 14, weight: 'bold' }
+            },
+            ticks: {
+              callback: function(value) {
+                return '$' + new Intl.NumberFormat('es-MX').format(value);
+              }
+            }
+          },
+          y1: {
+            type: 'linear',
+            display: true,
+            position: 'right',
+            title: {
+              display: true,
+              text: 'Ahorro Neto (MXN)',
+              font: { size: 14, weight: 'bold' },
+              color: 'rgb(59, 130, 246)'
+            },
+            ticks: {
+              callback: function(value) {
+                return '$' + new Intl.NumberFormat('es-MX').format(value);
+              },
+              color: 'rgb(59, 130, 246)'
+            },
+            grid: { drawOnChartArea: false }
+          }
+        }
+      }
+    });
+  }
+
+  // ========================================
+  // GRÁFICA 2: Generación Real vs Garantizada
+  // ========================================
+  const ctxGen = document.getElementById('generacionChart');
+  if (ctxGen) {
+    generacionChartInstance = new Chart(ctxGen, {
+      type: 'bar',
+      data: {
+        labels: chartData.generacion_chart.labels,
+        datasets: [
+          {
+            type: 'bar',
+            label: 'Generación Real',
+            data: chartData.generacion_chart.generacion_real,
+            backgroundColor: 'rgba(59, 130, 246, 0.8)',
+            borderColor: 'rgb(59, 130, 246)',
+            borderWidth: 2,
+            borderRadius: 6,
+            order: 2
+          },
+          {
+            type: 'bar',
+            label: 'Generación Garantizada',
+            data: chartData.generacion_chart.generacion_garantizada,
+            backgroundColor: 'rgba(156, 39, 176, 0.5)',
+            borderColor: 'rgb(156, 39, 176)',
+            borderWidth: 2,
+            borderRadius: 6,
+            order: 3
+          },
+          {
+            type: 'line',
+            label: '% Cumplimiento',
+            data: chartData.generacion_chart.cumplimiento,
+            borderColor: 'rgb(251, 146, 60)',
+            backgroundColor: 'rgba(251, 146, 60, 0.1)',
+            borderWidth: 3,
+            tension: 0.4,
+            fill: true,
+            pointRadius: 5,
+            pointBackgroundColor: 'rgb(251, 146, 60)',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointHoverRadius: 7,
+            yAxisID: 'y1',
+            order: 1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false
+        },
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: {
+              font: { size: 14, weight: 'bold' },
+              padding: 20,
+              usePointStyle: true
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            padding: 12,
+            titleFont: { size: 14, weight: 'bold' },
+            bodyFont: { size: 13 },
+            callbacks: {
+              label: function(context) {
+                let label = context.dataset.label || '';
+                if (label) label += ': ';
+                if (context.parsed.y !== null) {
+                  if (label.includes('%')) {
+                    label += context.parsed.y.toFixed(2) + '%';
+                  } else {
+                    label += new Intl.NumberFormat('es-MX').format(context.parsed.y) + ' kWh';
+                  }
+                }
+                return label;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              font: { size: 10 },
+              maxRotation: 45,
+              minRotation: 45
+            }
+          },
+          y: {
+            type: 'linear',
+            display: true,
+            position: 'left',
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Generación (kWh)',
+              font: { size: 14, weight: 'bold' }
+            },
+            ticks: {
+              callback: function(value) {
+                return new Intl.NumberFormat('es-MX').format(value) + ' kWh';
+              }
+            }
+          },
+          y1: {
+            type: 'linear',
+            display: true,
+            position: 'right',
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Cumplimiento (%)',
+              font: { size: 14, weight: 'bold' },
+              color: 'rgb(251, 146, 60)'
+            },
+            ticks: {
+              callback: function(value) {
+                return value.toFixed(0) + '%';
+              },
+              color: 'rgb(251, 146, 60)'
+            },
+            grid: { drawOnChartArea: false }
+          }
+        }
+      }
+    });
+  }
+}
+
+// Cargar gráficas cuando se carga la página
+document.addEventListener('DOMContentLoaded', function() {
+  const chartData = <%= raw @chart_data.to_json %>;
+  console.log('Datos iniciales:', chartData);
+  initializeCharts(chartData);
+});
+
+// Detectar cuando el formulario regresa después de filtrar
+window.addEventListener('pageshow', function(event) {
+  if (event.persisted || performance.navigation.type === 2) {
+    // La página se restauró desde caché, reinicializar gráficas
+    const chartData = <%= raw @chart_data.to_json %>;
+    console.log('Página restaurada, reinicializando gráficas');
+    initializeCharts(chartData);
+  }
+});
+</script>
+
+<style>
+.bg-gradient-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.bg-gradient-success {
+  background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+}
+</style>
