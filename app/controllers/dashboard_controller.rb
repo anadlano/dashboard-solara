@@ -22,9 +22,9 @@ class DashboardController < ApplicationController
   private
 
   def set_filter_options
-    @sitios = SolarData.distinct.pluck(:sitio).compact.sort
     @integradores = SolarData.distinct.pluck(:integrador).compact.sort
-    @rpus = SolarData.distinct.pluck(:rpu).compact.sort
+    @clientes = SolarData.distinct.pluck(:cliente).compact
+    @sitios = SolarData.distinct.pluck(:sitio).compact.sort
     @meses = SolarData.distinct.pluck(:mes).compact.sort
     @periodos = SolarData.distinct.pluck(:periodo).compact.sort
     @anios = SolarData.distinct.pluck(:anio_contractual).compact.sort
@@ -34,7 +34,7 @@ class DashboardController < ApplicationController
     @filtered_data = SolarData.all
     @filtered_data = @filtered_data.by_sitio(params[:sitio])
     @filtered_data = @filtered_data.by_integrador(params[:integrador])
-    @filtered_data = @filtered_data.by_rpu(params[:rpu])
+    @filtered_data = @filtered_data.where(cliente: params[:cliente]) if params[:cliente].present?
     @filtered_data = @filtered_data.by_mes(params[:mes])
     @filtered_data = @filtered_data.by_periodo(params[:periodo])
     @filtered_data = @filtered_data.by_anio(params[:anio])

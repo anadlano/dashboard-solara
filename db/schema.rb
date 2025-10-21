@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_10_16_040924) do
+ActiveRecord::Schema[7.1].define(version: 2025_10_21_172056) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -31,6 +31,7 @@ ActiveRecord::Schema[7.1].define(version: 2025_10_16_040924) do
     t.decimal "generacion_esperada", precision: 12, scale: 2, default: "0.0"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "cliente"
     t.index ["integrador"], name: "index_solar_data_on_integrador"
     t.index ["mes"], name: "index_solar_data_on_mes"
     t.index ["periodo"], name: "index_solar_data_on_periodo"
