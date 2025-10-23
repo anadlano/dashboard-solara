@@ -27,7 +27,8 @@ class DashboardController < ApplicationController
     @sitios = SolarData.distinct.pluck(:sitio).compact.sort
     @meses = SolarData.distinct.pluck(:mes).compact.sort
     @periodos = SolarData.distinct.pluck(:periodo).compact.sort
-    @anios = SolarData.distinct.pluck(:anio_contractual).compact.sort
+    @anios_contractuales = SolarData.distinct.pluck(:anio_contractual).compact
+    @anios_calendario = SolarData.distinct.pluck(:anio_calendario).compact
   end
 
   def set_filtered_data
@@ -36,8 +37,8 @@ class DashboardController < ApplicationController
     @filtered_data = @filtered_data.by_integrador(params[:integrador])
     @filtered_data = @filtered_data.where(cliente: params[:cliente]) if params[:cliente].present?
     @filtered_data = @filtered_data.by_mes(params[:mes])
-    @filtered_data = @filtered_data.by_periodo(params[:periodo])
-    @filtered_data = @filtered_data.by_anio(params[:anio])
+    @filtered_data = @filtered_data.where(anio_contractual: params[:anio_contractual]) if params[:anio_contractual].present?
+    @filtered_data = @filtered_data.where(anio_calendario: params[:anio_calendario]) if params[:anio_calendario].present?
     @filtered_data = @filtered_data.by_date_range(params[:fecha_inicio], params[:fecha_fin])
     @filtered_data = @filtered_data.order(fecha: :asc)
   end

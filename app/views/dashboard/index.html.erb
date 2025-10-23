@@ -72,11 +72,19 @@
         </div>
 
         <div class="col-md-2">
-          <%= form.label :periodo, "Periodo", class: "form-label" %>
-          <%= form.select :periodo,
-                         options_for_select([['Todos', '']] + @periodos.map { |p| [p, p] }, params[:periodo]),
-                         {},
-                         { class: "form-select" } %>
+          <%= form.label :anio_contractual, "Año Contractual", class: "form-label" %>
+          <%= form.select :anio_contractual,
+                          options_for_select([['Todos', '']] + @anios_contractuales.map { |a| [a, a] }, params[:anio_contractual]),
+                        {},
+                        { class: "form-select" } %>
+        </div>
+
+        <div class="col-md-2">
+          <%= form.label :anio_calendario, "Año Calendario", class: "form-label" %>
+          <%= form.select :anio_calendario,
+                        options_for_select([['Todos', '']] + @anios_calendario.map { |a| [a, a] }, params[:anio_calendario]),
+                        {},
+                        { class: "form-select" } %>
         </div>
 
        <div class="col-md-2 d-flex align-items-end">

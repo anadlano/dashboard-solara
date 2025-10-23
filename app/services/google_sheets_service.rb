@@ -4,7 +4,7 @@ require 'googleauth'
 class GoogleSheetsService
   SPREADSHEET_ID = ENV['GOOGLE_SPREADSHEET_ID']
   SHEET_NAME = 'conglomerado_automatizado' # ← Nombre de tu pestaña
-  RANGE = "#{SHEET_NAME}!A1:N" # Ajusta según el número de columnas
+  RANGE = "#{SHEET_NAME}!A1:O" # Ajusta según el número de columnas
 
   def initialize
     @service = Google::Apis::SheetsV4::SheetsService.new
@@ -55,6 +55,7 @@ class GoogleSheetsService
         solar_data.assign_attributes(
           integrador: data_hash['Integrador'],
           anio_contractual: data_hash['Año contractual'],
+          anio_calendario: data_hash['Año calendario'],
           mes: data_hash['Mes'],
           fecha: parse_date_from_periodo(data_hash['Periodo']),
           cliente: data_hash['Cliente'],
